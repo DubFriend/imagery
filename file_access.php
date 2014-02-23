@@ -1,5 +1,11 @@
 <?php
 class file_access {
+    const ERROR_UPLOAD_IMAGE = 'upload failed';
+    const ERROR_INVALID_EXTENSION = 'invalid file type';
+    const ERROR_NOT_AN_IMAGE = 'not an image';
+    const ERROR_MOVE_UPLOADED_FILE = 'could not upload image';
+    const ERROR_REPROCESSING_IMAGE = 'invalid image';
+
     // http://indrek.it/bulletproof-image-upload-security-guide-for-developers/
     // http://stackoverflow.com/questions/4166762/php-image-upload-security-check-list
     function image_upload($source, $destination) {
@@ -7,31 +13,40 @@ class file_access {
             'gif', 'jpeg', 'jpg', 'jif', 'jfif', 'png'
         );
 
-        $error_message = 'upload failed';
-        if(in_array(self::get_extension($destination), $extension_whitelist)) {
-            if(getimagesize($source)) {
+        $error_message = self::ERROR_UPLOAD_IMAGE;
+
+        if(
+            in_array(self::get_extension($source), $extension_whitelist) &&
+            in_array(self::get_extension($destination), $extension_whitelist)
+        ) {
+            if(@getimagesize($source)) {
                 if(move_uploaded_file($source, $destination)) {
                     if(self::reprocess_image($destination)) {
                         $error_message = null;
                     }
                     else {
                         unlink($destination);
-                        $error_message = 'invalid image';
+                        $error_message = self::ERROR_REPROCESSING_IMAGE;
                     }
                 }
                 else {
-                    $error_message = 'could not upload image';
+                    $error_message = self::ERROR_MOVE_UPLOADED_FILE;
                 }
             }
             else {
-                $error_message = 'not an image';
+                $error_message = self::ERROR_NOT_AN_IMAGE;
             }
         }
         else {
-            $error_message = 'invalid file type';
+            $error_message = self::ERROR_INVALID_EXTENSION;
         }
 
         return $error_message;
+    }
+
+    function get_image_dimensions($source) {
+        $info = getimagesize($source);
+        return array('width' => $info[0], 'height' => $info[1]);
     }
 
     function is_temp($source) {
