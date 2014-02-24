@@ -49,6 +49,38 @@ class file_access {
         return array('width' => $info[0], 'height' => $info[1]);
     }
 
+    function scale_image($source, $new_width, $new_height) {
+        $image = $this->read_image($source);
+        $old_width = imagesx($image);
+        $old_height = imagesy($image);
+        $scaled_image = imagecreatetruecolor($new_width, $new_height);
+        imagecopyresampled(
+            $scaled_image, $image,
+            0, 0, 0, 0,
+            $new_width, $new_height,
+            $old_width, $old_height
+        );
+        $this->write_image($scaled_image, $source);
+        imagedestroy($image);
+        imagedestroy($scaled_image);
+    }
+
+    function crop_image($source, array $a, array $b) {
+        $image = $this->read_image($source);
+        $new_width = $b['x'] - $a['x'];
+        $new_height = $b['y'] - $a['y'];
+        $cropped_image = imagecreatetruecolor($new_width, $new_height);
+        imagecopy(
+            $cropped_image, $image,
+            0, 0,
+            $a['x'], $a['y'],
+            $new_width, $new_height
+        );
+        $this->write_image($cropped_image, $source);
+        imagedestroy($image);
+        imagedestroy($cropped_image);
+    }
+
     function is_temp($source) {
         return trim(sys_get_temp_dir(), '/') === explode('/', trim($source,'/'))[0];
     }
@@ -82,39 +114,50 @@ class file_access {
         return $extension_map[self::get_extension($file_name)];
     }
 
-    // reprocess the image to remove possible embedded code etc.
-    private function reprocess_image($file_path) {
+    private function read_image($file_path) {
+        $image;
         switch(self::get_image_type($file_path)) {
             case 'jpg':
-                $image = @imagecreatefromjpeg($file_path);
-                if($image) {
-                    imagejpeg($image, $file_path);
-                }
-                else {
-                    return false;
-                }
+                $image = imagecreatefromjpeg($file_path);
                 break;
             case 'gif':
-                $image = @imagecreatefromgif($file_path);
-                if($image) {
-                    imagegif($image, $file_path);
-                }
-                else {
-                    return false;
-                }
+                $image = imagecreatefromgif($file_path);
                 break;
             case 'png':
-                $image = @imagecreatefrompng($file_path);
-                if($image) {
-                    imagepng($image, $file_path);
-                }
-                else {
-                    return false;
-                }
+                $image = imagecreatefrompng($file_path);
                 break;
             default:
-                throw new Exception('invalid image extension');
+                throw new Exception("invalid image type");
         }
+        return $image;
+    }
+
+    private function write_image($image, $file_path) {
+        if($image) {
+            switch(self::get_image_type($file_path)) {
+                case 'jpg':
+                    imagejpeg($image, $file_path);
+                    break;
+                case 'gif':
+                    imagegif($image, $file_path);
+                    break;
+                case 'png':
+                    imagepng($image, $file_path);
+                    break;
+                default:
+                    throw new Exception("invalid image type");
+            }
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    // reprocess the image to remove possible embedded code etc.
+    private function reprocess_image($file_path) {
+        $image = $this->read_image($file_path);
+        $this->write_image($image, $file_path);
         imagedestroy($image);
         return true;
     }

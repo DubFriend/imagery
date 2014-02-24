@@ -108,5 +108,22 @@ class file_access_Test extends PHPUnit_Framework_TestCase {
         $this->assertFalse(file_exists($this->fileGif));
         copy($this->tempStorage, $this->fileGif);
     }
+
+    function test_scale_image() {
+        copy($this->fileGif, $this->fileTempGif);
+        $this->file_access->scale_image($this->fileTempGif, 20, 30);
+        list($width, $height) = getimagesize($this->fileTempGif);
+        $this->assertEquals($width, 20, 'correct width');
+        $this->assertEquals($height, 30, 'correct height');
+    }
+
+    function test_crop_image() {
+        copy($this->fileGif, $this->fileTempGif);
+        $this->file_access->crop_image(
+            $this->fileTempGif,
+            array('x' => 5, 'y' => 20),
+            array('x' => 30, 'y' => 50)
+        );
+    }
 }
 ?>
