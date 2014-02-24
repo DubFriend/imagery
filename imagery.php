@@ -74,7 +74,7 @@ class imagery {
             list($newWidth, $newHeight) = $a($dim['width'], $dim['height']);
         }
         else {
-            list($newWidth, $newHeight) = $this->calculate_dimensions(
+            list($newWidth, $newHeight) = $this->calculate_scale_dimensions(
                 $this->parser->parse($a),
                 $this->parser->parse($b)
             );
@@ -88,7 +88,7 @@ class imagery {
         return $this;
     }
 
-    private function calculate_dimensions($width, $height) {
+    private function calculate_scale_dimensions($width, $height) {
 
     }
 }
