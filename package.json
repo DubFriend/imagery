@@ -1,0 +1,39 @@
+{
+  "name": "imagery",
+  "version": "0.0.0",
+  "description": "Easy image upload and manipulation in PHP",
+  "main": "gruntfile.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "grunt": "~0.4.2",
+    "grunt-phpunit": "~0.3.3",
+    "grunt-contrib-watch": "~0.5.3"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.2",
+    "grunt-phpunit": "~0.3.3",
+    "grunt-contrib-watch": "~0.5.3"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DubFriend/imagery.git"
+  },
+  "keywords": [
+    "PHP",
+    "image",
+    "upload",
+    "scale",
+    "crop",
+    "manipulate"
+  ],
+  "author": "Brian Detering <BDeterin@gmail.com> (http://www.briandetering.net/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DubFriend/imagery/issues"
+  }
+}
