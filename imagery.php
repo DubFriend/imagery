@@ -68,7 +68,7 @@ class imagery {
         return $this;
     }
 
-    function scale($a, $b) {
+    function scale($a, $b = null) {
         $dim = $this->file_access->get_image_dimensions($this->source);
         if(is_callable($a)) {
             list($newWidth, $newHeight) = $a($dim['width'], $dim['height']);
@@ -79,7 +79,9 @@ class imagery {
                 $this->parser->parse($b)
             );
         }
-        $this->file_access->scale_image($this->source, $newWidth, $newHeight);
+        $this->file_access->scale_image(
+            $this->source, intval($newWidth), intval($newHeight)
+        );
 
         return $this;
     }
@@ -88,26 +90,37 @@ class imagery {
         $currentDim = $this->file_access->get_image_dimensions($this->source);
         $rawWidth = $this->calculate_pixel_value($width[0], $currentDim['width']);
         $rawHeight = $this->calculate_pixel_value($height[0], $currentDim['height']);
+
         array_shift($width);
         array_shift($height);
 
-        if(!is_null($rawWidth) && !is_null($rawHeight)) {
-            $restrictedWidth = $this->concider_restrictions(
-                $width, $rawWidth, $currentDim['width']
-            );
-            $restrictedHeight = $this->concider_restrictions(
-                $height, $rawHeight, $currentDim['height']
-            );
-        }
-        else if(is_null($rawWidth)) {
+        $restrictedWidth = is_null($rawWidth) ? null : $this->concider_restrictions(
+            $width, $rawWidth, $currentDim['width']
+        );
+        $restrictedHeight = is_null($rawHeight) ? null : $this->concider_restrictions(
+            $height, $rawHeight, $currentDim['height']
+        );
 
+        if(is_null($rawWidth)) {
+            $restrictedWidth = $this->scale_in_proportion(array(
+                'newValue' => $restrictedHeight,
+                'currentValue' => $currentDim['height'],
+                'valueToBeScaled' => $currentDim['width']
+            ));
         }
         else if(is_null($rawHeight)) {
+            $restrictedHeight = $this->scale_in_proportion(array(
+                'newValue' => $restrictedWidth,
+                'currentValue' => $currentDim['width'],
+                'valueToBeScaled' => $currentDim['height']
+            ));
+        }
 
-        }
-        else {
-            throw new Exception('insufficient configuration');
-        }
+        return array($restrictedWidth, $restrictedHeight);
+    }
+
+    private function scale_in_proportion(array $fig) {
+        return $fig['newValue'] / $fig['currentValue'] * $fig['valueToBeScaled'];
     }
 
     private function concider_restrictions(array $restriction, $raw, $current) {
