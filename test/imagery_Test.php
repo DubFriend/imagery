@@ -64,7 +64,12 @@ class file_access_mock {
             'width' => $width,
             'height' => $height
         );
+    }
 
+    function crop_image($source, array $a, array $b) {
+        $this->crop_parameters = array(
+            'source' => $source, 'a' => $a, 'b' => $b
+        );
     }
 }
 
@@ -184,7 +189,7 @@ class imagery_Test extends PHPUnit_Framework_TestCase {
     }
 
     function test_scale_conciders_restrictions_not_restricted() {
-        $this->imagery->scale('50% 5px min', '200% 5000px max');
+        $this->imagery->scale('50% 5px min', '200% 5000 max');
         $this->assertEquals(
             array('source' => 'destination.jpg', 'width' => 150, 'height' => 800),
             $this->file_access->scale_parameters
@@ -224,6 +229,86 @@ class imagery_Test extends PHPUnit_Framework_TestCase {
         $this->assertEquals(
             array('source' => 'destination.jpg', 'width' => 75, 'height' => 100),
             $this->file_access->scale_parameters
+        );
+    }
+
+    function test_scale_no_height_parameter_scales_in_proportion_with_restriction() {
+        $this->imagery->scale('1000px 200% max');
+        $this->assertEquals(
+            array('source' => 'destination.jpg', 'width' => 600, 'height' => 800),
+            $this->file_access->scale_parameters
+        );
+    }
+
+    function test_crop_simple() {
+        $this->imagery->crop(array(4, '50px'), array('40', '50%'));
+        $this->assertEquals(
+            array(
+                'source' => 'destination.jpg',
+                'a' => array('x' => 4, 'y' => 50),
+                'b' => array('x' => 40, 'y' => 200)
+            ),
+            $this->file_access->crop_parameters
+        );
+    }
+
+    function test_crop_missing_second_coordinates_scales_to_outer_edge() {
+        $this->imagery->crop(array(4, 5));
+        $this->assertEquals(
+            array(
+                'source' => 'destination.jpg',
+                'a' => array('x' => 4, 'y' => 5),
+                'b' => array('x' => 300, 'y' => 400)
+            ),
+            $this->file_access->crop_parameters
+        );
+    }
+
+    function test_crop_missing_first_coordinates_scales_to_inner_edge() {
+        $this->imagery->crop(null, array(40, 50));
+        $this->assertEquals(
+            array(
+                'source' => 'destination.jpg',
+                'a' => array('x' => 0, 'y' => 0),
+                'b' => array('x' => 40, 'y' => 50)
+            ),
+            $this->file_access->crop_parameters
+        );
+    }
+
+    function test_crop_apply_restrictions() {
+        $this->imagery->crop(array('90% 20px max', '50% 30px max'));
+        $this->assertEquals(
+            array(
+                'source' => 'destination.jpg',
+                'a' => array('x' => 20, 'y' => 30),
+                'b' => array('x' => 300, 'y' => 400)
+            ),
+            $this->file_access->crop_parameters
+        );
+    }
+
+    function test_crop_missing_parameter_crops_to_proportion() {
+        $this->imagery->crop(array(null, '90% 200px max'));
+        $this->assertEquals(
+            array(
+                'source' => 'destination.jpg',
+                'a' => array('x' => 150, 'y' => 200),
+                'b' => array('x' => 300, 'y' => 400)
+            ),
+            $this->file_access->crop_parameters
+        );
+    }
+
+    function test_crop_missing_parameter_negative_value_crops_from_outer_edge() {
+        $this->imagery->crop(null, array(-5, '-10px'));
+        $this->assertEquals(
+            array(
+                'source' => 'destination.jpg',
+                'a' => array('x' => 0, 'y' => 0),
+                'b' => array('x' => 295, 'y' => 390)
+            ),
+            $this->file_access->crop_parameters
         );
     }
 

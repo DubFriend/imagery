@@ -42,7 +42,7 @@ class imagery_parser {
 
     private function get_value($token) {
         $matches;
-        preg_match('/^[0-9\.]*/', $token, $matches);
+        preg_match('/^-?[0-9\.]*/', $token, $matches);
         return is_null($matches[0]) ? null : floatval($matches[0]);
     }
 }

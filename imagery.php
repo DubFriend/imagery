@@ -13,11 +13,13 @@
 
 // $img->cut_paste('new/image.jpg')
 //     ->scale('50%', '150% max 200px')
-//     ->crop(function ($width, $height) {
+//     ->scale(function ($width, $height) {
 //         return array(
 //             array(0, 0), array($width / 2, $height / 2)
 //         );
 //     })
+//     ->crop('50% from center')
+//     ->crop(array('-45px from center'))
 //     ->crop(array(4, 3), array(50, 60))
 //     ->copy_paste('thumb/image.jpg')
 //     ->scale(75);
@@ -70,50 +72,88 @@ class imagery {
 
     function scale($a, $b = null) {
         $dim = $this->file_access->get_image_dimensions($this->source);
+        list($newWidth, $newHeight) = $this->calculate_height_width_pair($a, $b, $dim);
+        $this->file_access->scale_image(
+            $this->source, intval($newWidth), intval($newHeight)
+        );
+        return $this;
+    }
+
+    function crop($a, $b = null) {
+        $dim = $this->file_access->get_image_dimensions($this->source);
+        if(is_array($a)) {
+            list($x1, $y1) = $this->calculate_height_width_pair($a[0], $a[1], $dim);
+        }
+        else if(is_null($a)) {
+            $x1 = 0;
+            $y1 = 0;
+        }
+
+        if($b) {
+            list($x2, $y2) = $this->calculate_height_width_pair($b[0], $b[1], $dim);
+        }
+        else {
+            $x2 = $dim['width'];
+            $y2 = $dim['height'];
+        }
+
+        $this->file_access->crop_image(
+            $this->source,
+            array('x' => intval($x1), 'y' => intval($y1)),
+            array('x' => intval($x2), 'y' => intval($y2))
+        );
+    }
+
+    private function calculate_height_width_pair($a, $b, array $dim) {
         if(is_callable($a)) {
             list($newWidth, $newHeight) = $a($dim['width'], $dim['height']);
         }
         else {
             list($newWidth, $newHeight) = $this->calculate_scale_dimensions(
                 $this->parser->parse($a),
-                $this->parser->parse($b)
+                $this->parser->parse($b),
+                $dim
             );
         }
-        $this->file_access->scale_image(
-            $this->source, intval($newWidth), intval($newHeight)
-        );
 
-        return $this;
+        return array($newWidth, $newHeight);
     }
 
-    private function calculate_scale_dimensions(array $width, array $height) {
-        $currentDim = $this->file_access->get_image_dimensions($this->source);
-        $rawWidth = $this->calculate_pixel_value($width[0], $currentDim['width']);
-        $rawHeight = $this->calculate_pixel_value($height[0], $currentDim['height']);
+    private function calculate_scale_dimensions(array $width, array $height, array $dim) {
+        $rawWidth = $this->calculate_pixel_value($width[0], $dim['width']);
+        $rawHeight = $this->calculate_pixel_value($height[0], $dim['height']);
 
         array_shift($width);
         array_shift($height);
 
         $restrictedWidth = is_null($rawWidth) ? null : $this->concider_restrictions(
-            $width, $rawWidth, $currentDim['width']
+            $width, $rawWidth, $dim['width']
         );
         $restrictedHeight = is_null($rawHeight) ? null : $this->concider_restrictions(
-            $height, $rawHeight, $currentDim['height']
+            $height, $rawHeight, $dim['height']
         );
 
         if(is_null($rawWidth)) {
             $restrictedWidth = $this->scale_in_proportion(array(
                 'newValue' => $restrictedHeight,
-                'currentValue' => $currentDim['height'],
-                'valueToBeScaled' => $currentDim['width']
+                'currentValue' => $dim['height'],
+                'valueToBeScaled' => $dim['width']
             ));
         }
         else if(is_null($rawHeight)) {
             $restrictedHeight = $this->scale_in_proportion(array(
                 'newValue' => $restrictedWidth,
-                'currentValue' => $currentDim['width'],
-                'valueToBeScaled' => $currentDim['height']
+                'currentValue' => $dim['width'],
+                'valueToBeScaled' => $dim['height']
             ));
+        }
+
+        if($restrictedWidth < 0) {
+            $restrictedWidth = $dim['width'] + $restrictedWidth;
+        }
+
+        if($restrictedHeight < 0) {
+            $restrictedHeight = $dim['height'] + $restrictedHeight;
         }
 
         return array($restrictedWidth, $restrictedHeight);

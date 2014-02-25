@@ -18,20 +18,38 @@ class imagery_parser_Test extends PHPUnit_Framework_TestCase {
             array(array('type' => 'pixel', 'value' => 45)),
             $this->parser->parse(45)
         );
-
         $this->assertEquals(
             array(array('type' => 'pixel', 'value' => 45)),
             $this->parser->parse('45')
         );
-
         $this->assertEquals(
             array(array('type' => 'pixel', 'value' => 45.2)),
             $this->parser->parse(45.2)
         );
-
         $this->assertEquals(
             array(array('type' => 'pixel', 'value' => 45.2)),
             $this->parser->parse('45.2')
+        );
+    }
+
+    function test_negative_number() {
+        $this->assertEquals(
+            array(array('type' => 'pixel', 'value' => -45.2)),
+            $this->parser->parse(-45.2)
+        );
+    }
+
+    function test_negative_number_pixel() {
+        $this->assertEquals(
+            array(array('type' => 'pixel', 'value' => -45.2)),
+            $this->parser->parse('-45.2px')
+        );
+    }
+
+    function test_negative_number_percent() {
+        $this->assertEquals(
+            array(array('type' => 'percent', 'value' => -45.2)),
+            $this->parser->parse('-45.2%')
         );
     }
 
