@@ -79,17 +79,85 @@ class imagery {
                 $this->parser->parse($b)
             );
         }
-        $this->file_access->scale_image($newWidth, $newHeight);
+        $this->file_access->scale_image($this->source, $newWidth, $newHeight);
 
         return $this;
     }
 
-    function crop($a, $b) {
-        return $this;
+    private function calculate_scale_dimensions(array $width, array $height) {
+        $currentDim = $this->file_access->get_image_dimensions($this->source);
+        $rawWidth = $this->calculate_pixel_value($width[0], $currentDim['width']);
+        $rawHeight = $this->calculate_pixel_value($height[0], $currentDim['height']);
+        array_shift($width);
+        array_shift($height);
+
+        if(!is_null($rawWidth) && !is_null($rawHeight)) {
+            $restrictedWidth = $this->concider_restrictions(
+                $width, $rawWidth, $currentDim['width']
+            );
+            $restrictedHeight = $this->concider_restrictions(
+                $height, $rawHeight, $currentDim['height']
+            );
+        }
+        else if(is_null($rawWidth)) {
+
+        }
+        else if(is_null($rawHeight)) {
+
+        }
+        else {
+            throw new Exception('insufficient configuration');
+        }
     }
 
-    private function calculate_scale_dimensions($width, $height) {
+    private function concider_restrictions(array $restriction, $raw, $current) {
+        if($restriction) {
+            $restrictedValue = $this->calculate_pixel_value(
+                $restriction[0], $current
+            );
+            if(isset($restriction[1])) {
+                if($restriction[1]['type'] === 'maximum') {
+                    if($raw > $restrictedValue) {
+                        return $restrictedValue;
+                    }
+                    else {
+                        return $raw;
+                    }
+                }
+                else if($restriction[1]['type'] === 'minimum') {
+                    if($raw < $restrictedValue) {
+                        return $restrictedValue;
+                    }
+                    else {
+                        return $raw;
+                    }
+                }
+                else {
+                    throw new Exception('qualifier must be "max" or "min"');
+                }
+            }
+            else {
+                throw new Exception('must specify if restriction is a max or min');
+            }
+        }
+        else {
+            return $raw;
+        }
+    }
 
+    private function calculate_pixel_value(array $value, $comparedValue) {
+        if($value['type'] === 'pixel') {
+            return $value['value'];
+        }
+        else if($value['type'] === 'percent') {
+            return $value['value'] / 100 * $comparedValue;
+        }
+        else if($value['type'] === 'null') {
+            return null;
+        }
+        else {
+            throw new Exception('invalid type');
+        }
     }
 }
 ?>

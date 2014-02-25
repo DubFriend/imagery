@@ -123,5 +123,6 @@ class imagery_Test extends PHPUnit_Framework_TestCase {
             $this->file_access->cut_paste_parameters
         );
     }
+
 }
 ?>
